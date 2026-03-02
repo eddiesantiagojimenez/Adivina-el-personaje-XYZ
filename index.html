@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XYZ COMIC - Juego Final</title>
+    <style>
+        body, html { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; font-family: 'Arial', sans-serif; overflow-x: hidden; }
+        
+        #contenedor { 
+            position: relative; 
+            width: 100%; 
+            max-width: 1081px; 
+            line-height: 0; 
+        }
+
+        .tablero-img { width: 100%; height: auto; display: block; }
+
+        .boton {
+            position: absolute;
+            z-index: 1000;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0);
+        }
+
+        .marca-roja {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 0, 0, 0.4); 
+            display: none;
+            pointer-events: none;
+        }
+        .marcado .marca-roja { display: block !important; }
+
+        /* VENTANA PARA EL PERSONAJE ELEGIDO */
+        #ventana-seleccion {
+            position: absolute;
+            left: 41.16%; top: 4.06%; 
+            width: 17.11%; height: 8.38%;
+            background-color: white; 
+            overflow: hidden; 
+            z-index: 500; 
+            display: none;
+            /* Para centrar el texto de instrucción */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        #foto-recorte {
+            position: absolute; 
+            width: 1081px; height: 1921px;
+            background-image: url('images/tablero_completo.jpg');
+            background-size: 1081px 1921px;
+            display: none; /* Se muestra solo al elegir */
+        }
+
+        #texto-instruccion {
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 5px;
+            line-height: 1.2;
+            display: none;
+            text-transform: uppercase;
+        }
+
+        #status {
+            position: fixed; bottom: 0; background: rgba(0,0,0,0.8); color: white;
+            width: 100%; text-align: center; padding: 10px; z-index: 2000; font-size: 14px;
+            border-top: 2px solid #ff0000;
+        }
+        .modo-elegir-activo { background: #004400 !important; color: #0f0 !important; }
+    </style>
+</head>
+<body>
+
+<div id="contenedor">
+    <img src="images/tablero_completo.jpg" class="tablero-img">
+    
+    <div id="ventana-seleccion">
+        <div id="foto-recorte"></div>
+        <div id="texto-instruccion">Escoge tu personaje</div>
+    </div>
+
+    <div id="btn-reset" class="boton" style="left:3.7%; top:0; width:17%; height:9.1%;"></div>
+
+    <div id="btn-top" class="boton" style="left:41.16%; top:4.06%; width:17.11%; height:8.38%;"></div>
+
+    <div id="grid-personajes"></div>
+</div>
+
+<div id="status">XYZ COMIC: Toca a los personajes para marcarlos.</div>
+
+<script>
+    const status = document.getElementById('status');
+    const ventana = document.getElementById('ventana-seleccion');
+    const recorte = document.getElementById('foto-recorte');
+    const textoInstruccion = document.getElementById('texto-instruccion');
+    const btnTop = document.getElementById('btn-top');
+    const btnReset = document.getElementById('btn-reset');
+    const grid = document.getElementById('grid-personajes');
+    
+    let modoSeleccion = false;
+
+    // --- GENERACIÓN DE PERSONAJES ---
+    const xInicio = 37;
+    const yInicio = 295;
+    const xSalto = 203;
+    const ySalto = 176;
+    const ancho = 184;
+    const alto = 162;
+
+    for (let fila = 0; fila < 7; fila++) {
+        for (let col = 0; col < 5; col++) {
+            const xActual = xInicio + (col * xSalto);
+            const yActual = yInicio + (fila * ySalto);
+
+            const div = document.createElement('div');
+            div.className = 'boton pj-cuadro'; // Añadimos clase para el reset
+            div.style.left = (xActual / 10.81) + "%";
+            div.style.top = (yActual / 19.21) + "%";
+            div.style.width = (ancho / 10.81) + "%";
+            div.style.height = (alto / 19.21) + "%";
+            div.innerHTML = '<div class="marca-roja"></div>';
+
+            div.addEventListener('click', function() {
+                if (modoSeleccion) {
+                    recorte.style.left = "-" + xActual + "px";
+                    recorte.style.top = "-" + yActual + "px";
+                    recorte.style.display = "block";
+                    textoInstruccion.style.display = "none";
+                    ventana.style.display = "flex";
+                    
+                    modoSeleccion = false;
+                    status.classList.remove('modo-elegir-activo');
+                    status.innerText = "¡Personaje elegido! Ahora adivina el de tu oponente.";
+                } else {
+                    this.classList.toggle('marcado');
+                }
+            });
+            grid.appendChild(div);
+        }
+    }
+
+    // ACCIÓN: TOCAR CUADRO BLANCO ARRIBA
+    btnTop.addEventListener('click', function() {
+        modoSeleccion = true;
+        // Mostrar ventana con el texto de instrucción
+        ventana.style.display = "flex";
+        textoInstruccion.style.display = "block";
+        recorte.style.display = "none";
+        
+        status.classList.add('modo-elegir-activo');
+        status.innerText = "MODO SELECCIÓN: Toca tu personaje abajo.";
+    });
+
+    // ACCIÓN: RESET (Logo Mantis)
+    btnReset.addEventListener('click', function() {
+        // 1. Quitar todas las marcas rojas
+        const todos = document.querySelectorAll('.pj-cuadro');
+        todos.forEach(p => p.classList.remove('marcado'));
+
+        // 2. Limpiar ventana de arriba
+        ventana.style.display = "none";
+        recorte.style.display = "none";
+        textoInstruccion.style.display = "none";
+
+        // 3. Resetear estados
+        modoSeleccion = false;
+        status.classList.remove('modo-elegir-activo');
+        status.innerText = "Juego reiniciado. Toca a los personajes para marcarlos.";
+    });
+</script>
+
+</body>
+</html>
